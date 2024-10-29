@@ -1,0 +1,8 @@
+
+.main-content {
+  padding: 20px;
+  background-color: #B9E5E8;
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+}

@@ -1,0 +1,29 @@
+
+.sidebar {
+  background-color: #DFF2EB;
+  width: 200px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 20px 0;
+  cursor: pointer;
+}
+
+.auth-button {
+  margin-top: auto;
+  padding: 10px;
+  background-color: #88C0D0;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
