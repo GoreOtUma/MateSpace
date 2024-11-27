@@ -1,0 +1,29 @@
+.map-tab {
+    display: flex;
+    padding: 20px;
+  }
+  
+  .map-buttons {
+    display: flex;
+    flex-direction: column;
+    margin-right: 20px;
+  }
+  
+  .map-buttons button,
+  .map-buttons .filter {
+    background-color: #5D9EC3;
+    color: #fff;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .map-container {
+    flex-grow: 1;
+    height: 500px;
+    background-color: #B9E5E8;
+    border-radius: 10px;
+  }
+  

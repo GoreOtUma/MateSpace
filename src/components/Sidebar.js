@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/Sidebar.css';
 
-function Sidebar({ onTabChange }) {
+function Sidebar({ onTabChange, onLogout }) {
   return (
     <div className="sidebar">
       <nav>
@@ -12,9 +12,10 @@ function Sidebar({ onTabChange }) {
           <li onClick={() => onTabChange('messages')}>Сообщения</li>
         </ul>
       </nav>
-      <button className="auth-button" onClick={() => alert('Авторизация/Выход')}>
-        Войти/Выйти
+      <button className="auth-button" onClick={() => onTabChange('login')}>
+        Выйти
       </button>
+
     </div>
   );
 }

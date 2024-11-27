@@ -8,8 +8,8 @@ function App() {
 
   return (
     <div className="app">
-      <Sidebar onTabChange={setActiveTab} /> {/* передаём функцию для изменения вкладки */}
-      <MainContent activeTab={activeTab} /> {/* передаём текущую вкладку */}
+      {activeTab !== 'login' && <Sidebar onTabChange={setActiveTab} />} {/* Скрыть сайдбар для логина */}
+      <MainContent activeTab={activeTab} />
     </div>
   );
 }

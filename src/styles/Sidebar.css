@@ -1,4 +1,12 @@
-
+.auth-button {
+  margin-top: auto;
+  padding: 10px;
+  background-color: #88C0D0;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
 .sidebar {
   background-color: #DFF2EB;
   width: 200px;
@@ -7,6 +15,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .sidebar ul {
@@ -19,11 +28,7 @@
   cursor: pointer;
 }
 
-.auth-button {
-  margin-top: auto;
-  padding: 10px;
-  background-color: #88C0D0;
-  border: none;
-  color: white;
-  cursor: pointer;
+.auth-button:active,
+.auth-button:hover {
+  background-color: #679AA6;
 }
