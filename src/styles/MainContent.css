@@ -1,8 +1,10 @@
 
 .main-content {
+  position:relative;
+  overflow:hidden;
   padding: 20px;
+  margin: 0;
   background-color: #B9E5E8;
   flex: 1;
-  overflow-y: auto;
   height: 100vh;
 }

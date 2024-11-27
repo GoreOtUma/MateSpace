@@ -12,9 +12,8 @@ function MapView() {
         </div>
       </div>
       <div className="map-container">
-        {/* Здесь вставьте компонент или iframe карты */}
         <iframe
-          src="https://yandex.ru/map-widget/v1/-/CCUBc6yPzA"
+          src="https://yandex.ru/map-widget/v1/?ll=37.225414%2C56.740005&z=14"
           frameBorder="0"
           title="Map"
           style={{ width: '100%', height: '100%', borderRadius: '10px' }}
