@@ -1,0 +1,27 @@
+.messages-page {
+  padding: 20px;
+  background-color: #B9E5E8;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #DFF2EB;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.chat-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+}
+
+.chat-details {
+  display: flex;
+  flex-direction: column;
+}
