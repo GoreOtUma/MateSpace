@@ -3,6 +3,7 @@ import '../styles/Auth.css';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+
 function Register() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', birthday: '', password: '', confirmPassword: '' });

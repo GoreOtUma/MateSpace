@@ -7,7 +7,7 @@ const app = express();
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'localhost',
+  database: 'matespace',
   password: 'postgres',
   port: 5432,
 });
@@ -15,6 +15,7 @@ const pool = new Pool({
 app.use(cors());
 app.use(bodyParser.json());
 
+// Маршрут для регистрации пользователя
 app.post('/register', async (req, res) => {
   const { name, email, birthday, password } = req.body;
   try {
@@ -27,6 +28,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// Маршрут для входа пользователя
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -39,6 +41,38 @@ app.post('/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Ошибка при входе');
+  }
+});
+
+// Маршрут для добавления мероприятия
+app.post('/api/events', async (req, res) => {
+  const { time, location, theme, count_people } = req.body;
+
+  if (!time || !location || !theme) {
+    return res.status(400).send('Все поля обязательны для заполнения');
+  }
+
+  try {
+    // Сначала проверим, существует ли theme в таблице theme_event
+    const themeCheckResult = await pool.query('SELECT * FROM theme_event WHERE theme = $1', [theme]);
+
+    // Если theme не существует, добавим его в таблицу theme_event
+    if (themeCheckResult.rows.length === 0) {
+      const addThemeResult = await pool.query('INSERT INTO theme_event (theme) VALUES ($1) RETURNING id', [theme]);
+      const themeId = addThemeResult.rows[0].id;
+    }
+
+    // Теперь добавим мероприятие в таблицу event
+    const result = await pool.query(
+      'INSERT INTO event (time, location, theme, count_people) VALUES ($1, $2, $3, $4) RETURNING id',
+      [time, location, theme, count_people || 0]
+    );
+
+    const eventId = result.rows[0].id;
+    res.status(201).json({ message: 'Мероприятие успешно добавлено', eventId });
+  } catch (error) {
+    console.error('Ошибка при добавлении события:', error);
+    res.status(500).send('Ошибка при добавлении события');
   }
 });
 
