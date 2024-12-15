@@ -44,7 +44,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // Маршрут для добавления мероприятия
 app.post('/api/events', async (req, res) => {
   const { time, location, theme, count_people, latitude, longitude } = req.body;
@@ -95,15 +94,22 @@ app.get('/api/events', async (req, res) => {
   } catch (error) {
     console.error('Ошибка при получении мероприятий:', error);
     res.status(500).send('Ошибка при получении мероприятий');
-=======
+  }
+});
+
+// Маршрут для получения профилей
 app.get('/profiles', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM Users left join photo on Users.email = photo.email_user left join (SELECT email AS email_user, get_user_hobby(email) AS hobby FROM Users WHERE status = true) AS hobbies ON Users.email = hobbies.email_user where status is true');
+    const result = await pool.query(
+      'SELECT * FROM Users ' +
+      'LEFT JOIN photo ON Users.email = photo.email_user ' +
+      'LEFT JOIN (SELECT email AS email_user, get_user_hobby(email) AS hobby FROM Users WHERE status = true) AS hobbies ON Users.email = hobbies.email_user ' +
+      'WHERE status IS true'
+    );
     res.json(result.rows);
   } catch (error) {
     console.error('Ошибка при получении анкет:', error);
     res.status(500).send('Ошибка при получении анкет');
->>>>>>> 2f8d38dbbbe5e8f4e944d544e8385e0c50ae00bd
   }
 });
 
