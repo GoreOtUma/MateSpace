@@ -46,26 +46,28 @@ app.post('/login', async (req, res) => {
 
 // Маршрут для добавления мероприятия
 app.post('/api/events', async (req, res) => {
-  const { time, location, theme, count_people } = req.body;
+  const { time, location, theme, count_people, latitude, longitude } = req.body;
 
-  if (!time || !location || !theme) {
+  if (!time || !location || !theme || !latitude || !longitude) {
     return res.status(400).send('Все поля обязательны для заполнения');
   }
 
   try {
-    // Сначала проверим, существует ли theme в таблице theme_event
+    // Проверяем наличие темы и добавляем, если ее нет
     const themeCheckResult = await pool.query('SELECT * FROM theme_event WHERE theme = $1', [theme]);
+    let themeId;
 
-    // Если theme не существует, добавим его в таблицу theme_event
     if (themeCheckResult.rows.length === 0) {
       const addThemeResult = await pool.query('INSERT INTO theme_event (theme) VALUES ($1) RETURNING id', [theme]);
-      const themeId = addThemeResult.rows[0].id;
+      themeId = addThemeResult.rows[0].id;
+    } else {
+      themeId = themeCheckResult.rows[0].id;
     }
 
-    // Теперь добавим мероприятие в таблицу event
+    // Вставляем событие в таблицу event
     const result = await pool.query(
-      'INSERT INTO event (time, location, theme, count_people) VALUES ($1, $2, $3, $4) RETURNING id',
-      [time, location, theme, count_people || 0]
+      'INSERT INTO event (time, location, theme, count_people, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [time, location, themeId, count_people || 0, latitude, longitude]
     );
 
     const eventId = result.rows[0].id;
@@ -73,6 +75,25 @@ app.post('/api/events', async (req, res) => {
   } catch (error) {
     console.error('Ошибка при добавлении события:', error);
     res.status(500).send('Ошибка при добавлении события');
+  }
+});
+
+// Маршрут для получения всех мероприятий
+app.get('/api/events', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        e.id, e.time, e.location, e.theme, e.count_people, 
+        e.latitude, e.longitude, 
+        t.theme AS theme_name
+      FROM event e
+      JOIN theme_event t ON e.theme = t.id`
+    );
+
+    res.status(200).json(result.rows); // Отправляем данные в формате JSON
+  } catch (error) {
+    console.error('Ошибка при получении мероприятий:', error);
+    res.status(500).send('Ошибка при получении мероприятий');
   }
 });
 
