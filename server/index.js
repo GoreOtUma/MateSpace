@@ -42,6 +42,16 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.get('/profiles', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Users left join photo on Users.email = photo.email_user left join (SELECT email AS email_user, get_user_hobby(email) AS hobby FROM Users WHERE status = true) AS hobbies ON Users.email = hobbies.email_user where status is true');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Ошибка при получении анкет:', error);
+    res.status(500).send('Ошибка при получении анкет');
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
