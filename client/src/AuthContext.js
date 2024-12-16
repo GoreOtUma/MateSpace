@@ -6,22 +6,20 @@ const AuthContext = createContext();
 // Поставщик авторизации
 export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState(localStorage.getItem('authToken') || null);
-
   const login = (token) => {
-    localStorage.setItem('authToken', token);
     setAuthToken(token);
+    localStorage.setItem('authToken', token); // Сохраняем токен
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
     setAuthToken(null);
+    localStorage.removeItem('authToken');
   };
 
   useEffect(() => {
-    // Проверка токена при загрузке страницы
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setAuthToken(token);
+    const storedToken = localStorage.getItem('authToken');
+    if (storedToken) {
+      login(storedToken);
     }
   }, []);
 
