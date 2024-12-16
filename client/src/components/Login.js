@@ -14,13 +14,16 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/login', formData);
-      alert('Вход успешен');
-      navigate('/');
+      const response = await axios.post('http://localhost:5000/login', formData);
+      // alert(response.data.message);
+      alert('ТЫ ВОШЁЛ');
+      localStorage.setItem('authToken', response.data.token); // Сохраняем токен
+      navigate('/'); // Перенаправляем на главную страницу
     } catch (error) {
       alert('Неверный email или пароль');
     }
   };
+  
 
   return (
     <div className="auth-page">

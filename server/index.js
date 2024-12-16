@@ -7,7 +7,7 @@ const app = express();
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'matespace',
+  database: 'localhost',
   password: 'postgres',
   port: 5432,
 });
@@ -28,13 +28,12 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Маршрут для входа пользователя
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const result = await pool.query('SELECT * FROM Password WHERE email_user = $1 AND password = $2', [email, password]);
     if (result.rows.length > 0) {
-      res.status(200).send('Успешный вход');
+      res.status(200).json({ message: 'Успешный вход', token: 'some-unique-token' }); // вернем токен
     } else {
       res.status(401).send('Неверный email или пароль');
     }
@@ -43,6 +42,7 @@ app.post('/login', async (req, res) => {
     res.status(500).send('Ошибка при входе');
   }
 });
+
 
 // Маршрут для добавления мероприятия
 app.post('/api/events', async (req, res) => {

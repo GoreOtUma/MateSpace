@@ -1,7 +1,15 @@
 import React from 'react';
 import '../styles/Sidebar.css';
+import { useNavigate } from 'react-router-dom';
 
-function Sidebar({ onTabChange, onLogout }) {
+function Sidebar({ onTabChange }) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken'); // Удаляем токен
+    navigate('/login'); // Перенаправляем на страницу входа
+  };
+
   return (
     <div className="sidebar">
       <nav>
@@ -12,10 +20,9 @@ function Sidebar({ onTabChange, onLogout }) {
           <li onClick={() => onTabChange('messages')}>Сообщения</li>
         </ul>
       </nav>
-      <button className="auth-button" onClick={() => onTabChange('login')}>
+      <button className="auth-button" onClick={handleLogout}>
         Выйти
       </button>
-
     </div>
   );
 }
