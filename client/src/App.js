@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useAuth } from './AuthContext';
+import { Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import './styles/App.css';
 
 function App() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('profile'); // состояние для текущей вкладки
+  const { authToken } = useAuth(); // Получаем токен из контекста
+  const [activeTab, setActiveTab] = useState('profile'); // Состояние для текущей вкладки
 
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      navigate('/login'); // Если токен отсутствует, перенаправляем на страницу входа
-    }
-  }, [navigate]);
+  // Если пользователь не авторизован, перенаправляем на страницу логина
+  if (!authToken) {
+    return <Navigate to="/login" />;
+  }
 
   return (
     <div className="app">
-      {activeTab !== 'login' && <Sidebar onTabChange={setActiveTab} />} {/* Скрыть сайдбар для логина */}
+      {/* Sidebar будет скрыт только при необходимости */}
+      <Sidebar onTabChange={setActiveTab} />
       <MainContent activeTab={activeTab} />
     </div>
   );

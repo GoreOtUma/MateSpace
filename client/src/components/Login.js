@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import '../styles/Auth.css';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../AuthContext';
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // Получаем метод login из AuthContext
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleChange = (e) => {
@@ -15,15 +17,13 @@ function Login() {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:5000/login', formData);
-      // alert(response.data.message);
       alert('ТЫ ВОШЁЛ');
-      localStorage.setItem('authToken', response.data.token); // Сохраняем токен
+      login(response.data.token); // Используем login для сохранения токена
       navigate('/'); // Перенаправляем на главную страницу
     } catch (error) {
       alert('Неверный email или пароль');
     }
   };
-  
 
   return (
     <div className="auth-page">

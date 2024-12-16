@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../AuthContext'; // Подключаем контекст авторизации
 import '../styles/MapView.css';
+import { useNavigate } from 'react-router-dom';
+
+
 
 function MapView() {
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
-  const [isFormVisible, setIsFormVisible] = useState(false); // Для отображения формы
-  const [markerForm, setMarkerForm] = useState({ title: '', description: '', time: '' }); // Данные формы
-  const [clickedCoords, setClickedCoords] = useState(null); // Координаты клика
-  const [formPosition, setFormPosition] = useState({ top: 0, left: 0 }); // Позиция формы
-  const [user, setUser] = useState(null); // Данные авторизованного пользователя
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [markerForm, setMarkerForm] = useState({ title: '', description: '', time: '' });
+  const [clickedCoords, setClickedCoords] = useState(null);
+  const [formPosition, setFormPosition] = useState({ top: 0, left: 0 });
+
+  const { authToken, user } = useAuth(); // Получаем токен и пользователя из контекста
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Загружаем Яндекс.Карты, если они не загружены
+    // Проверяем авторизацию пользователя
+    if (!authToken) {
+      navigate('/login');
+      return;
+    }
+
+    // Загружаем Яндекс.Карты
     if (window.ymaps) {
       window.ymaps.ready(initMap);
     } else {
@@ -21,13 +33,7 @@ function MapView() {
       script.onload = () => window.ymaps.ready(initMap);
       document.head.appendChild(script);
     }
-
-    // Проверяем авторизован ли пользователь (например, через токен в localStorage)
-    const loggedInUser = localStorage.getItem('user'); // пример получения данных о пользователе
-    if (loggedInUser) {
-      setUser(JSON.parse(loggedInUser));
-    }
-  }, []);
+  }, [authToken, navigate]);
 
   const initMap = () => {
     const myMap = new window.ymaps.Map('map', {
@@ -52,44 +58,32 @@ function MapView() {
     });
   };
 
-  // Функция для форматирования даты
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' };
-    return date.toLocaleString('ru-RU', options);
-  };
-
   const fetchMarkers = async (myMap) => {
     try {
-      const response = await fetch('http://localhost:5000/api/events');
+      const response = await fetch('http://localhost:5000/api/events', {
+        headers: {
+          Authorization: `Bearer ${authToken}`, // Добавляем токен в заголовки
+        },
+      });
       const events = await response.json();
-      console.log('Загруженные мероприятия:', events);
-
       setMarkers(events);
 
-      // Удаляем предыдущие маркеры с карты перед добавлением новых
       myMap.geoObjects.removeAll();
 
-      // Добавляем маркеры на карту
       events.forEach((event) => {
         if (event.latitude && event.longitude) {
-          const formattedTime = formatDate(event.time); // Форматируем время
-
           const marker = new window.ymaps.Placemark(
             [event.latitude, event.longitude],
             {
               balloonContent: `
                 <b>${event.theme_name}</b><br>
                 ${event.location}<br>
-                <i>${formattedTime}</i>
+                <i>${new Date(event.time).toLocaleString()}</i>
               `,
             },
             { preset: 'islands#redDotIcon' }
           );
-
           myMap.geoObjects.add(marker);
-        } else {
-          console.warn('Мероприятие без координат:', event);
         }
       });
     } catch (error) {
@@ -99,10 +93,7 @@ function MapView() {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setMarkerForm((prevForm) => ({
-      ...prevForm,
-      [name]: value,
-    }));
+    setMarkerForm((prevForm) => ({ ...prevForm, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -114,12 +105,13 @@ function MapView() {
     }
 
     const eventData = {
-      time: markerForm.time, // Время из формы
-      location: markerForm.description, // Используем описание как локацию
-      theme: markerForm.title, // Название события
-      count_people: 0, // Значение по умолчанию
-      latitude: clickedCoords[0], // Координаты широты
-      longitude: clickedCoords[1], // Координаты долготы
+      time: markerForm.time,
+      location: markerForm.description,
+      theme: markerForm.title,
+      count_people: 0,
+      latitude: clickedCoords[0],
+      longitude: clickedCoords[1],
+      created_by: user?.email, // Пример использования данных пользователя
     };
 
     try {
@@ -127,19 +119,19 @@ function MapView() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`, // Передаём токен
         },
         body: JSON.stringify(eventData),
       });
 
       if (response.ok) {
         alert('Мероприятие успешно добавлено!');
-        fetchMarkers(map); // Обновляем маркеры
+        fetchMarkers(map);
       } else {
         alert('Ошибка при добавлении мероприятия.');
       }
     } catch (error) {
       console.error('Ошибка при отправке данных на сервер:', error);
-      alert('Ошибка при отправке данных на сервер.');
     }
 
     setIsFormVisible(false);
