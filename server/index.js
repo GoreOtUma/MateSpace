@@ -7,13 +7,107 @@ const app = express();
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'matespace',
+  database: 'localhost',
   password: 'postgres',
   port: 5432,
 });
 
 app.use(cors());
 app.use(bodyParser.json());
+
+const multer = require('multer');
+const path = require('path');
+
+// Конфигурация multer для загрузки файлов
+const storage = multer.memoryStorage(); // Сохраняем фото в памяти
+const upload = multer({ storage: storage });
+
+app.put('/api/profile', upload.single('profilePhoto'), async (req, res) => {
+  const authToken = req.headers.authorization?.split(' ')[1];
+
+  if (!authToken) {
+    return res.status(401).send('Не авторизован');
+  }
+
+  const { name, gender, data_birthday, city, comments } = req.body;
+  const photo = req.file; // Фото, если оно было загружено
+
+  try {
+    // Обновление данных пользователя
+    const result = await pool.query(
+      `UPDATE Users 
+       SET name = $1, pol = $2, data_birthday = $3, city = $4, comments = $5
+       WHERE email = $6
+       RETURNING name, pol AS gender, data_birthday, city, comments`,
+      [name, gender, data_birthday, city, comments, authToken]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).send('Пользователь не найден');
+    }
+
+    // Если фото было загружено, сохраняем его
+    if (photo) {
+      const email = authToken;
+      const photoBuffer = photo.buffer; // Сохраняем фото как буфер
+
+      // Сохраняем фото в таблицу
+      await pool.query(
+        'INSERT INTO Photo (email_user, link_ph) VALUES ($1, $2)',
+        [email, photoBuffer]
+      );
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Ошибка при обновлении профиля:', error);
+    res.status(500).send('Ошибка сервера');
+  }
+});
+
+// Маршрут для получения профиля с фото
+app.get('/api/profile', async (req, res) => {
+  const authToken = req.headers.authorization?.split(' ')[1];
+
+  if (!authToken) {
+    return res.status(401).send('Не авторизован');
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT 
+        u.name, 
+        u.data_birthday, 
+        u.pol AS gender, 
+        u.city, 
+        u.comments, 
+        p.link_ph
+      FROM Users u
+      LEFT JOIN photo p ON u.email = p.email_user
+      WHERE u.email = $1`,
+      [authToken]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).send('Пользователь не найден');
+    }
+
+    const user = result.rows[0];
+
+    // Если изображение есть, конвертируем его в формат Base64
+    if (user.link_ph) {
+      const base64Image = user.link_ph.toString('base64');
+      user.link_ph = base64Image;
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Ошибка при получении профиля:', error);
+    res.status(500).send('Ошибка сервера');
+  }
+});
+
+
 
 // Маршрут для регистрации пользователя
 app.post('/register', async (req, res) => {
@@ -43,39 +137,39 @@ app.post('/login', async (req, res) => {
   }
 });
 // Маршрут для получения профиля текущего пользователя
-app.get('/api/profile', async (req, res) => {
-  const authToken = req.headers.authorization?.split(' ')[1];
+// app.get('/api/profile', async (req, res) => {
+//   const authToken = req.headers.authorization?.split(' ')[1];
 
-  if (!authToken) {
-    return res.status(401).send('Не авторизован');
-  }
+//   if (!authToken) {
+//     return res.status(401).send('Не авторизован');
+//   }
 
-  try {
-    const result = await pool.query(
-      `SELECT 
-        u.name, 
-        u.data_birthday, 
-        u.pol AS gender, 
-        u.city, 
-        u.comments, 
+//   try {
+//     const result = await pool.query(
+//       `SELECT 
+//         u.name, 
+//         u.data_birthday, 
+//         u.pol AS gender, 
+//         u.city, 
+//         u.comments, 
         
-        NULL AS hobbies
-      FROM Users u
-      LEFT JOIN photo p ON u.email = p.email_user
-      WHERE u.email = $1`,
-      [authToken]
-    );
+//         NULL AS hobbies
+//       FROM Users u
+//       LEFT JOIN photo p ON u.email = p.email_user
+//       WHERE u.email = $1`,
+//       [authToken]
+//     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).send('Пользователь не найден');
-    }
+//     if (result.rows.length === 0) {
+//       return res.status(404).send('Пользователь не найден');
+//     }
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Ошибка при получении профиля:', error);
-    res.status(500).send('Ошибка сервера');
-  }
-});
+//     res.json(result.rows[0]);
+//   } catch (error) {
+//     console.error('Ошибка при получении профиля:', error);
+//     res.status(500).send('Ошибка сервера');
+//   }
+// });
 
 
 
@@ -105,35 +199,35 @@ app.get('/profiles', async (req, res) => {
 });
 
 // Маршрут для обновления профиля пользователя
-app.put('/api/profile', async (req, res) => {
-  const authToken = req.headers.authorization?.split(' ')[1];
+// app.put('/api/profile', async (req, res) => {
+//   const authToken = req.headers.authorization?.split(' ')[1];
 
-  if (!authToken) {
-    return res.status(401).send('Не авторизован');
-  }
+//   if (!authToken) {
+//     return res.status(401).send('Не авторизован');
+//   }
 
-  const { name, gender, data_birthday, city, comments } = req.body;
+//   const { name, gender, data_birthday, city, comments } = req.body;
 
-  try {
-    // Обновление данных пользователя
-    const result = await pool.query(
-      `UPDATE Users 
-       SET name = $1, pol = $2, data_birthday = $3, city = $4, comments = $5
-       WHERE email = $6
-       RETURNING name, pol AS gender, data_birthday, city, comments`,
-      [name, gender, data_birthday, city, comments, authToken]
-    );
+//   try {
+//     // Обновление данных пользователя
+//     const result = await pool.query(
+//       `UPDATE Users 
+//        SET name = $1, pol = $2, data_birthday = $3, city = $4, comments = $5
+//        WHERE email = $6
+//        RETURNING name, pol AS gender, data_birthday, city, comments`,
+//       [name, gender, data_birthday, city, comments, authToken]
+//     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).send('Пользователь не найден');
-    }
+//     if (result.rows.length === 0) {
+//       return res.status(404).send('Пользователь не найден');
+//     }
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Ошибка при обновлении профиля:', error);
-    res.status(500).send('Ошибка сервера');
-  }
-});
+//     res.json(result.rows[0]);
+//   } catch (error) {
+//     console.error('Ошибка при обновлении профиля:', error);
+//     res.status(500).send('Ошибка сервера');
+//   }
+// });
 
 // Маршрут для получения списка хобби
 app.get('/api/hobbies', async (req, res) => {

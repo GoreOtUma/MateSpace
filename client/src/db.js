@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 const pool = new Pool({
   user: 'postgres',      // ваш пользователь PostgreSQL
   host: 'localhost',          // хост (обычно localhost)
-  database: 'matespace',  // имя базы данных
+  database: 'localhost',  // имя базы данных
   password: 'postgres',  // ваш пароль
   port: 5432,                 // порт PostgreSQL
 });

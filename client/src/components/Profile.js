@@ -10,7 +10,7 @@ function Profile() {
   const [editedUser, setEditedUser] = useState({});
   const [availableHobbies, setAvailableHobbies] = useState([]);
   const [selectedHobbies, setSelectedHobbies] = useState([]);
-  
+  const [profilePhoto, setProfilePhoto] = useState(null);
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -24,7 +24,7 @@ function Profile() {
         if (response.ok) {
           const data = await response.json();
           setUser(data);
-          setEditedUser(data);  
+          setEditedUser(data);
         } else {
           console.error('Ошибка при получении данных профиля');
         }
@@ -46,7 +46,7 @@ function Profile() {
         console.error('Ошибка подключения к серверу:', error);
       }
     }
-  
+
     async function fetchUserHobbies() {
       try {
         const response = await fetch(`http://localhost:5000/api/profile/user_hobbies`, {
@@ -54,7 +54,7 @@ function Profile() {
             Authorization: `Bearer ${authToken}`,
           },
         });
-  
+
         if (response.ok) {
           const userHobbies = await response.json();
           setUser((prevUser) => ({
@@ -70,49 +70,28 @@ function Profile() {
       }
     }
 
-    async function fetchProfileAndHobbies() {
-      try {
-        const [profileResponse, hobbiesResponse, userHobbiesResponse] = await Promise.all([
-          fetch(`http://localhost:5000/api/profile`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }),
-          fetch(`http://localhost:5000/api/hobbies`),
-          fetch(`http://localhost:5000/api/profile/user_hobbies`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }),
-        ]);
-  
-        if (profileResponse.ok && hobbiesResponse.ok && userHobbiesResponse.ok) {
-          const userProfile = await profileResponse.json();
-          const availableHobbiesData = await hobbiesResponse.json();
-          const userHobbiesData = await userHobbiesResponse.json();
-  
-          // Обновляем состояние пользователя и хобби
-          setUser({ ...userProfile, hobbies: userHobbiesData });
-          setAvailableHobbies(availableHobbiesData);
-          setSelectedHobbies(userHobbiesData);
-        } else {
-          console.error('Ошибка при загрузке данных профиля или хобби');
-        }
-      } catch (error) {
-        console.error('Ошибка подключения к серверу:', error);
-      }
-    }
-    
     if (authToken) {
       fetchUserProfile();
-      fetchProfileAndHobbies();
+      fetchHobbies();
+      fetchUserHobbies();
     }
   }, [authToken]);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setProfilePhoto(file);
+    }
+  };
 
   const handleHobbyChange = (hobbyId) => {
     setSelectedHobbies((prevSelected) =>
       prevSelected.includes(hobbyId)
-        ? prevSelected.filter((id) => id !== hobbyId) // Удалить, если уже выбрано
-        : [...prevSelected, hobbyId] // Добавить, если не выбрано
+        ? prevSelected.filter((id) => id !== hobbyId)
+        : [...prevSelected, hobbyId]
     );
   };
-  
+
   const saveHobbies = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/profile/hobbies`, {
@@ -123,17 +102,14 @@ function Profile() {
         },
         body: JSON.stringify({ hobbies: selectedHobbies }),
       });
-  
+
       if (response.ok) {
         console.log('Хобби успешно обновлены');
-  
-        // Обновляем хобби на странице и закрываем окно редактирования
         setUser((prevUser) => ({
           ...prevUser,
-          hobbies: selectedHobbies, // Добавляем выбранные хобби в данные пользователя
+          hobbies: selectedHobbies,
         }));
-  
-        setIsEditing(false); // Закрываем режим редактирования
+        setIsEditing(false);
       } else {
         console.error('Ошибка при сохранении хобби');
       }
@@ -141,13 +117,7 @@ function Profile() {
       console.error('Ошибка при сохранении хобби:', error);
     }
   };
-  
-  
-  useEffect(() => {
-    console.log('availableHobbies:', availableHobbies);
-  }, [availableHobbies]);
-  
-  // Функция для изменения данных в инпутах
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditedUser((prevState) => ({
@@ -156,18 +126,26 @@ function Profile() {
     }));
   };
 
-  // Функция для отправки изменённых данных на сервер
   const handleSaveChanges = async () => {
+    const formData = new FormData();
+    formData.append('name', editedUser.name);
+    formData.append('gender', editedUser.gender);
+    formData.append('data_birthday', editedUser.data_birthday);
+    formData.append('city', editedUser.city);
+    formData.append('comments', editedUser.comments);
+    if (profilePhoto) {
+      formData.append('profilePhoto', profilePhoto);
+    }
+  
     try {
       const response = await fetch(`http://localhost:5000/api/profile`, {
-        method: 'PUT', // Используем PUT для обновления данных
+        method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify(editedUser),
+        body: formData,
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         setUser(data); // Обновляем отображаемые данные
@@ -187,14 +165,17 @@ function Profile() {
   return (
     <div className="profile">
       <div className="profile-photo">
-        <img src={user.photo || profilePhoto} alt="Профиль" />
-        <button
-          onClick={() => setIsEditing(true)} // Открытие режима редактирования
-          className="edit-button"
-        >
+        {/* Проверяем наличие фотографии в данных пользователя */}
+        {user.link_ph ? (
+          <img src={`data:image/jpeg;base64,${user.link_ph}`} alt="Профиль" />
+        ) : (
+          <p>Фото не загружено</p>
+        )}
+        <button onClick={() => setIsEditing(true)} className="edit-button">
           Редактировать профиль
         </button>
       </div>
+
       <div className="profile-info">
         {isEditing ? (
           <div className="edit-form">
@@ -242,6 +223,14 @@ function Profile() {
                 onChange={handleInputChange}
               />
             </label>
+            <label>
+              Фото:
+              <input
+                type="file"
+                name="profilePhoto"
+                onChange={handleFileChange}
+              />
+            </label>
             <button onClick={handleSaveChanges}>Сохранить изменения</button>
             <button onClick={() => setIsEditing(false)}>Отмена</button>
           </div>
@@ -257,41 +246,42 @@ function Profile() {
             </div>
           </>
         )}
-        {!isEditing && user.hobbies && (
-          <div className="hobbies-display">
-            <strong>Хобби:</strong>
-            <ul>
-              {user.hobbies.length > 0 ? (
-                user.hobbies.map((hobby, index) => <li key={index}>{hobby}</li>)
-              ) : (
-                <li>Хобби не указаны</li>
-              )}
-            </ul>
-          </div>
-        )}
-        {isEditing && (
-          <div className="hobbies-section">
-            <strong>Выберите хобби:</strong>
-            <div className="hobbies-list">
-            {Array.isArray(availableHobbies) && availableHobbies.length > 0 ? (
-          availableHobbies.map((hobby) => (
-            <label key={hobby.id}>
-              <input
-                type="checkbox"
-                checked={selectedHobbies.includes(hobby.h_name)} // Match by h_name
-                onChange={() => handleHobbyChange(hobby.h_name)}
-              />
-              {hobby.h_name}
-            </label>
-          ))
-        ) : (
-          <p>Хобби не загружены</p>
-        )}
-        </div>
-    <button onClick={saveHobbies}>Сохранить хобби</button>
-  </div>
-)}
 
+        <div className="hobbies-section">
+          {isEditing ? (
+            <>
+              <strong>Выберите хобби:</strong>
+              <div className="hobbies-list">
+                {availableHobbies.length > 0 ? (
+                  availableHobbies.map((hobby) => (
+                    <label key={hobby.id}>
+                      <input
+                        type="checkbox"
+                        checked={selectedHobbies.includes(hobby.h_name)}
+                        onChange={() => handleHobbyChange(hobby.h_name)}
+                      />
+                      {hobby.h_name}
+                    </label>
+                  ))
+                ) : (
+                  <p>Хобби не загружены</p>
+                )}
+              </div>
+              <button onClick={saveHobbies}>Сохранить хобби</button>
+            </>
+          ) : (
+            <div className="hobbies-display">
+              <strong>Хобби:</strong>
+              <ul>
+                {user.hobbies && user.hobbies.length > 0 ? (
+                  user.hobbies.map((hobby, index) => <li key={index}>{hobby}</li>)
+                ) : (
+                  <li>Хобби не указаны</li>
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
