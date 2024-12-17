@@ -22,6 +22,32 @@ const path = require('path');
 const storage = multer.memoryStorage(); // Сохраняем фото в памяти
 const upload = multer({ storage: storage });
 
+// Удаление профиля пользователя
+app.put('/api/profile/delete', async (req, res) => {
+  const authToken = req.headers.authorization?.split(' ')[1];
+
+  if (!authToken) {
+    return res.status(401).send('Не авторизован');
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE Users SET status = false WHERE email = $1 RETURNING status',
+      [authToken]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).send('Пользователь не найден');
+    }
+
+    res.status(200).send('Профиль успешно удалён');
+  } catch (error) {
+    console.error('Ошибка при удалении профиля:', error);
+    res.status(500).send('Ошибка сервера');
+  }
+});
+
+
 app.put('/api/profile', upload.single('profilePhoto'), async (req, res) => {
   const authToken = req.headers.authorization?.split(' ')[1];
 
@@ -125,9 +151,22 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
-    const result = await pool.query('SELECT * FROM Password WHERE email_user = $1 AND password = $2', [email, password]);
-    if (result.rows.length > 0) {
-      res.status(200).json({ message: 'Успешный вход', token: email }); // вернем email как token
+    const result = await pool.query(
+      'SELECT * FROM Users WHERE email = $1 AND status = true',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ status: false, message: 'Ваш профиль был удалён' });
+    }
+
+    const passwordResult = await pool.query(
+      'SELECT * FROM Password WHERE email_user = $1 AND password = $2',
+      [email, password]
+    );
+
+    if (passwordResult.rows.length > 0) {
+      res.status(200).json({ message: 'Успешный вход', token: email });
     } else {
       res.status(401).send('Неверный email или пароль');
     }
@@ -136,6 +175,7 @@ app.post('/login', async (req, res) => {
     res.status(500).send('Ошибка при входе');
   }
 });
+
 // Маршрут для получения профиля текущего пользователя
 // app.get('/api/profile', async (req, res) => {
 //   const authToken = req.headers.authorization?.split(' ')[1];

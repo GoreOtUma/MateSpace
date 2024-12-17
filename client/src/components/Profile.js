@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import '../styles/Profile.css';
 import profilePhoto from '../img/1712.jpg';
 import { useAuth } from '../AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function Profile() {
   const { authToken } = useAuth();
@@ -11,6 +12,8 @@ function Profile() {
   const [availableHobbies, setAvailableHobbies] = useState([]);
   const [selectedHobbies, setSelectedHobbies] = useState([]);
   const [profilePhoto, setProfilePhoto] = useState(null);
+  const navigate = useNavigate();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -77,10 +80,36 @@ function Profile() {
     }
   }, [authToken]);
 
+  const logout = () => {
+    localStorage.removeItem('authToken'); // Удаляем токен
+    navigate('/login'); // Перенаправляем на страницу входа
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
       setProfilePhoto(file);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/profile/delete`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        alert('Профиль успешно удалён');
+        logout(); // Завершаем сессию пользователя
+        navigate('/login'); // Перенаправляем на страницу входа
+      } else {
+        console.error('Ошибка при удалении профиля');
+      }
+    } catch (error) {
+      console.error('Ошибка подключения к серверу:', error);
     }
   };
 
@@ -174,6 +203,18 @@ function Profile() {
         <button onClick={() => setIsEditing(true)} className="edit-button">
           Редактировать профиль
         </button>
+        <button onClick={() => setIsDeleting(true)} className="delete-button">
+            Удалить профиль
+        </button>
+        {isDeleting && (
+        <div className="modal">
+          <div className="modal-content">
+            <p>Вы уверены, что хотите удалить профиль? Это действие необратимо.</p>
+            <button onClick={handleDeleteProfile} className="confirm-button">Да</button>
+            <button onClick={() => setIsDeleting(false)} className="cancel-button">Нет</button>
+          </div>
+        </div>
+      )}
       </div>
 
       <div className="profile-info">

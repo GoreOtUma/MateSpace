@@ -17,13 +17,20 @@ function Login() {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:5000/login', formData);
-      alert('ТЫ ВОШЁЛ');
-      login(response.data.token); // Используем login для сохранения токена
+  
+      if (response.data.status === false) {
+        alert('Ваш профиль был удалён');
+        return;
+      }
+  
+      alert('Вы вошли в систему');
+      login(response.data.token); // Сохраняем токен
       navigate('/'); // Перенаправляем на главную страницу
     } catch (error) {
       alert('Неверный email или пароль');
     }
   };
+  
 
   return (
     <div className="auth-page">
