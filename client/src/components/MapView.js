@@ -3,7 +3,7 @@ import { useAuth } from '../AuthContext'; // Подключаем контекс
 import '../styles/MapView.css';
 import { useNavigate } from 'react-router-dom';
 
-
+////
 
 function MapView() {
   const [map, setMap] = useState(null);
