@@ -4,7 +4,7 @@ const pool = new Pool({
   user: 'postgres',      // ваш пользователь PostgreSQL
   host: 'localhost',          // хост (обычно localhost)
   database: 'matespace',  // имя базы данных
-  password: 'Justdesserts03',  // ваш пароль
+  password: 'postgres',  // ваш пароль
   port: 5432,                 // порт PostgreSQL
 });
 async function testConnection() {
