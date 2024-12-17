@@ -7,8 +7,8 @@ const app = express();
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'localhost',
-  password: 'postgres',
+  database: 'matespace',
+  password: 'Justdesserts03',
   port: 5432,
 });
 
@@ -231,7 +231,19 @@ app.get('/profiles', async (req, res) => {
        WHERE status IS true AND Users.email <> $1`, // Исключаем текущего пользователя
       [authToken]
     );
-    res.json(result.rows);
+    const users = result.rows.map((user) => {
+      if (user.link_ph) {
+        return {
+          ...user,
+          link_ph: user.link_ph.toString('base64'),
+        };
+      }
+      return user;
+    });
+    console.log(users);
+res.json(users);
+
+    
   } catch (error) {
     console.error('Ошибка при получении анкет:', error);
     res.status(500).send('Ошибка при получении анкет');

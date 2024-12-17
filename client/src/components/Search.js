@@ -5,6 +5,7 @@ import axios from 'axios';
 function Search() {
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [profiles, setProfiles] = useState([]);
+  const [filteredProfiles, setFilteredProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     interests: '',
@@ -21,6 +22,7 @@ function Search() {
           headers: { Authorization: `Bearer ${authToken}` },
         });
         setProfiles(response.data);
+        setFilteredProfiles(response.data);
         setLoading(false);
       } catch (error) {
         console.error('Ошибка при загрузке анкет:', error);
@@ -42,7 +44,56 @@ function Search() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log('Фильтры применены:', filters);
+    const { interests, location, gender, age } = filters;
+  
+    const filtered = profiles.filter((profile) => {
+      // Проверка интересов
+      const matchesInterests =
+        !interests || 
+        (profile.hobby &&
+          profile.hobby
+            .replace(/{|}/g, '') // Удаляем скобки
+            .split(',')
+            .some((hobby) =>
+              hobby.toLowerCase().includes(interests.toLowerCase().trim())
+            ));
+  
+      // Проверка местоположения
+      const matchesLocation =
+        !location || 
+        (profile.city && profile.city.toLowerCase().includes(location.toLowerCase().trim()));
+  
+      // Проверка пола
+      const matchesGender =
+        !gender || 
+        (profile.pol && profile.pol.toLowerCase() === gender.toLowerCase().trim());
+  
+      // Проверка возраста
+      const matchesAge = !age || (profile.data_birthday && calculateAge(profile.data_birthday) === parseInt(age, 10));
+  
+      return matchesInterests && matchesLocation && matchesGender && matchesAge;
+    });
+  
+    console.log('Отфильтрованные анкеты:', filtered); // Для отладки
+    setFilteredProfiles(filtered);
+    setFilterOpen(false);
+  };
+
+  const calculateAge = (birthday) => {
+    const birthDate = new Date(birthday);
+    const ageDifMs = Date.now() - birthDate.getTime();
+    const ageDate = new Date(ageDifMs); // Используем разницу времени
+    return Math.abs(ageDate.getUTCFullYear() - 1970); // Возраст в годах
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      interests: '',
+      location: '',
+      gender: '',
+      age: '',
+    });
+    setFilteredProfiles(profiles); // Сбрасываем фильтрацию
   };
 
   return (
@@ -106,13 +157,18 @@ function Search() {
     <div className="search-results">
       {loading ? (
         <p>Загрузка...</p>
-      ) : profiles.length > 0 ? (
-        profiles.map((profile) => (
+      ) : filteredProfiles.length > 0 ? (
+        filteredProfiles.map((profile) => (
           <div key={profile.email} className="profile-card">
-            <img
-              src={`data:image/jpeg;base64,${profile.link_ph}` || ""}
-              alt={''}
-            />
+            {profile.link_ph && typeof profile.link_ph === 'string' ? (
+      <img
+        src={`data:image/jpeg;base64,${profile.link_ph}`}
+        alt={`Фото ${profile.name}`}
+      />
+    ) : (
+      <p></p>
+    )}
+
             <h3>{profile.name}</h3>
             <p>{profile.comments || ''}</p>
             <p><strong>Хобби:</strong></p>
