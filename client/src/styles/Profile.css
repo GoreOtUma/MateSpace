@@ -75,3 +75,20 @@
     margin: 5px 0;
   }
   
+
+  .hobbies-section {
+    margin-top: 20px;
+  }
+  
+  .hobbies-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .hobbies-list label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  

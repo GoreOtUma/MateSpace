@@ -15,8 +15,11 @@ function Search() {
 
   useEffect(() => {
     const fetchProfiles = async () => {
+      const authToken = localStorage.getItem('authToken');
       try {
-        const response = await axios.get('http://localhost:5000/profiles');
+        const response = await axios.get('http://localhost:5000/profiles', {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
         setProfiles(response.data);
         setLoading(false);
       } catch (error) {
@@ -112,7 +115,15 @@ function Search() {
             />
             <h3>{profile.name}</h3>
             <p>{profile.comments || ''}</p>
-            <p>{profile.hobby || ''}</p>
+            <p><strong>Хобби:</strong></p>
+            <ul>
+              {profile.hobby ? profile.hobby
+                .replace(/{|}/g, '') // Удаляем фигурные скобки
+                .split(',') // Разделяем по запятой
+                .map((hobby, index) => (
+                  <li key={index}>{hobby.trim()}</li> // Обрезаем пробелы
+                )) : <li>Не указано</li>}
+            </ul>
             <p><strong>Дата рождения:</strong> {profile.data_birthday.split('T')[0]}</p>
             <p><strong>Город:</strong> {profile.city || 'Не указан'}</p>
             <p><strong>Пол:</strong> {profile.pol || 'Не указан'}</p>

@@ -7,8 +7,8 @@ const app = express();
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'localhost',
-  password: 'postgres',
+  database: 'matespace',
+  password: 'Justdesserts03',
   port: 5432,
 });
 
@@ -79,14 +79,23 @@ app.get('/api/profile', async (req, res) => {
 
 
 
-// Маршрут для получения профилей
 app.get('/profiles', async (req, res) => {
+  const authToken = req.headers.authorization?.split(' ')[1];
+
+  if (!authToken) {
+    return res.status(401).send('Не авторизован');
+  }
+
   try {
     const result = await pool.query(
-      'SELECT * FROM Users ' +
-      'LEFT JOIN photo ON Users.email = photo.email_user ' +
-      'LEFT JOIN (SELECT email AS email_user, get_user_hobby(email) AS hobby FROM Users WHERE status = true) AS hobbies ON Users.email = hobbies.email_user ' +
-      'WHERE status IS true'
+      `SELECT * FROM Users 
+       LEFT JOIN photo ON Users.email = photo.email_user 
+       LEFT JOIN (
+         SELECT email AS email_user, get_user_hobby(email) AS hobby 
+         FROM Users WHERE status = true
+       ) AS hobbies ON Users.email = hobbies.email_user 
+       WHERE status IS true AND Users.email <> $1`, // Исключаем текущего пользователя
+      [authToken]
     );
     res.json(result.rows);
   } catch (error) {
@@ -126,6 +135,61 @@ app.put('/api/profile', async (req, res) => {
   }
 });
 
+// Маршрут для получения списка хобби
+app.get('/api/hobbies', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, h_name FROM Hobby'); // Предполагается, что таблица Hobby содержит столбцы id и name
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Ошибка при получении хобби:', error);
+    res.status(500).send('Ошибка сервера');
+  }
+});
+
+app.put('/api/profile/hobbies', async (req, res) => {
+  const authToken = req.headers.authorization?.split(' ')[1];
+  const { hobbies } = req.body; // hobbies — массив id хобби
+
+  if (!authToken) {
+    return res.status(401).send('Не авторизован');
+  }
+
+  try {
+    // Удаляем текущие хобби пользователя
+    await pool.query('DELETE FROM User_hobby WHERE email_user = $1', [authToken]);
+
+    // Добавляем новые хобби
+    if (hobbies && hobbies.length > 0) {
+      const values = hobbies.map((hobbyName) => `('${authToken}', '${hobbyName}')`).join(', ');
+      await pool.query(`INSERT INTO User_hobby (email_user, h_name) VALUES ${values}`);
+    }
+
+    res.status(200).send('Хобби успешно обновлены');
+  } catch (error) {
+    console.error('Ошибка при обновлении хобби:', error);
+    res.status(500).send('Ошибка сервера');
+  }
+});
+
+app.get('/api/profile/user_hobbies', async (req, res) => {
+  const authToken = req.headers.authorization?.split(' ')[1];
+
+  if (!authToken) {
+    return res.status(401).send('Не авторизован');
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT h_name FROM User_hobby WHERE email_user = $1',
+      [authToken]
+    );
+    const userHobbies = result.rows.map((row) => row.h_name);
+    res.json(userHobbies);
+  } catch (error) {
+    console.error('Ошибка при получении хобби пользователя:', error);
+    res.status(500).send('Ошибка сервера');
+  }
+});
 
 const PORT = 5000;
 app.listen(PORT, () => {
